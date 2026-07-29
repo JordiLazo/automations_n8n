@@ -1,0 +1,1375 @@
+{
+  "name": "Generali",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "output": "raw",
+        "filters": {
+          "custom": "from/emailAddress/address ne 'email.demo@automaise.com'"
+        },
+        "options": {
+          "downloadAttachments": true
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlookTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1856,
+        -416
+      ],
+      "id": "31ecc38d-9d3a-453e-9320-f28da20f1ad9",
+      "name": "Microsoft Outlook Trigger",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "UPYigvYXSMBcsvW2",
+          "name": "Microsoft Outlook OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-opus-4-7",
+          "mode": "list",
+          "cachedResultName": "Claude Opus 4.7"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.5,
+      "position": [
+        -752,
+        -384
+      ],
+      "id": "b1a84f5c-2080-4798-a252-cd4eb6571950",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "OYHHxPgqsZ7Bcc3k",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "messageId": {
+          "__rl": true,
+          "value": "={{ $('Microsoft Outlook Trigger').item.json.id }}",
+          "mode": "id"
+        },
+        "replyToSenderOnly": true,
+        "message": "={{ $json.html }}",
+        "additionalFields": {
+          "bodyContentType": "html"
+        },
+        "options": {
+          "saveAsDraft": false
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        80,
+        -208
+      ],
+      "id": "e054f961-16b1-4e2f-9d48-9b2648bcbb1d",
+      "name": "Reply to a message",
+      "webhookId": "9067f643-70ef-4cd1-9e09-94ea0cabca0f",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "UPYigvYXSMBcsvW2",
+          "name": "Microsoft Outlook OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=A mensagem de correio eletrónico é a seguinte:\n{{ $('fields_email').item.json.message }}\n\nOs anexos do e-mail têm a seguinte estrutura:\n{{ $json.content[0].text }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "============================\nOPERATIONAL INSTRUCTIONS\n===========================\n## Papel\nÉs o assistente de Sinistros Auto da Generali Tranquilidade. Recebes o email do cliente e os dados extraídos dos anexos em JSON. Verificas que documentos foram enviados e respondes de forma breve e tranquilizadora.\n\n## Documentos necessários\nPara processar o sinistro são obrigatórios DOIS documentos: Livrete/DUA do veículo e Carta de condução.\n\n## Processo\n1. Lê o email e o JSON e identifica que documentos foram enviados (DUA e/ou CARTA).\n2. Decide:\n   - **Faltam os dois** → pede DUA e CARTA.\n   - **Falta um** → confirma o que já recebeste e pede apenas o que falta.\n   - **Ambos presentes** → confirma que os dados foram registados no sistema, dá o número de processo (formato SIN-2026-XXXXXX) e indica o telefone da linha de sinistros para qualquer acompanhamento. NÃO digas que o cliente será contactado nem que alguém entrará em contacto para os próximos passos.\n3. Sempre que peças documentos, apresenta-os em bullet points.\n\n## Confirmação de registo\nSempre que houver dados extraídos válidos, menciona ao cliente que a sua informação foi introduzida corretamente no sistema de acordo com os documentos anexados. Referencia pelo menos um dado relevante extraído (ex.: matrícula do veículo, número de apólice, data do acidente ou local) para que o cliente reconheça a sua participação, juntamente com o número do processo (SIN-2026-XXXXXX). Usa apenas dados que existam no email ou no JSON; nunca os inventes.\n\n## Constraints\n- Nunca confirmes cobertura, responsabilidade ou valores; nunca feches processos.\n- Não inventes dados; usa só o email e o JSON.\n- Mensagens o mais breves possível, sem jargão.\n- Nunca digas que o cliente será contactado nem que uma equipa/pessoa entrará em contacto. Em vez disso, remete sempre para o telefone da linha de sinistros.\n- Termina sempre indicando o telefone do departamento de sinistros da Generali Tranquilidade — 211 520 310 (custo de chamada para a rede fixa nacional) — seguido de uma saudação de despedida (ex.: \"Com os melhores cumprimentos,\") e de <br>\"Generali Tranquilidade\". Não acrescentes nome do cliente nem remetente — a assinatura é digital.\n\n## Formato da resposta (corpo do email, HTML)\nUsa <br> para cada quebra de linha e <br><br> entre parágrafos. Listas de documentos em bullets com <br>• . Tudo numa única linha, sem \"\\n\" e sem etiquetas <html>/<body>/<p>.\n\n--- REFERENCE INFORMATION ---\nGenerali Tranquilidade, marca da Generali Seguros, S.A. (ASF nº 1197). Tom: proximidade e tranquilidade.\nLinha de Sinistros (departamento de sinistros): 211 520 310 (custo de chamada para a rede fixa nacional). É o único canal telefónico a indicar ao cliente.\nDados fictícios da demo: apólice 4471902, segurado Manuel Sousa, AA-12-BB (Renault Clio)."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -752,
+        -576
+      ],
+      "id": "a51dcf29-3adc-4583-a65e-271cdeb049d4",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "html": "<!DOCTYPE html>\n\n<html>\n<head>\n  <meta charset=\"UTF-8\" />\n  <title>Generali Seguros</title>\n</head>\n<body>\n<div id=\"Signature\" class=\"elementToProof\">\n<div class=\"elementToProof\" style=\"font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);\">\n<br>\n</div>\n<div>{{ $json.output }}</div>\n<br>\n<p class=\"elementToProof\" style=\"margin: 0cm; font-family: Aptos, sans-serif;\"><span style=\"font-size: 10pt; color: rgb(31, 20, 16);\"><b>Andreia Mendes</b></span></p>\n<p class=\"elementToProof\" style=\"margin: 0cm; font-family: Aptos, sans-serif;\"><span style=\"font-size: 8pt; color: rgb(166, 166, 166);\"><b>Customer Process Optimization</b></span></p>\n<p class=\"elementToProof\" style=\"margin: 0cm; font-family: Aptos, sans-serif; font-size: 12pt;\">\n    <!-- Logo debajo y alineado a la izquierda -->\n    <div style=\"margin-top:8px; text-align:left;\">\n        <img\n            src=\"https://i.ibb.co/bRRcHb1Z/logo-verticale-2020-07-16-17-41-03.jpg\"\n            alt=\"Generali Seguros Logo\"\n            width=\"200\"\n            height=\"80\"\n            style=\"display:block;\">\n    </div>\n</div>\n</body>\n</html>\n"
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        -160,
+        -208
+      ],
+      "id": "840359e9-5b32-4694-985d-e4bdd4c52cdd",
+      "name": "HTML"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "39355415-0ac9-4b7c-a827-cee929620d04",
+              "name": "name",
+              "value": "={{ $json.sender.emailAddress.name }}",
+              "type": "string"
+            },
+            {
+              "id": "d52b7bc5-0606-4939-a1b8-3e93acea105d",
+              "name": "email_address",
+              "value": "={{ $json.sender.emailAddress.address }}",
+              "type": "string"
+            },
+            {
+              "id": "720c9726-cae3-4459-9908-a78c73a3d191",
+              "name": "message",
+              "value": "={{\n$json.body.content\n.replace(/<style[\\s\\S]*?<\\/style>/gi, '')\n.replace(/<script[\\s\\S]*?<\\/script>/gi, '')\n.replace(/<[^>]+>/g, '\\n')\n.replace(/\\r/g, '')\n.replace(/\\n{2,}/g, '\\n')\n.trim()\n}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1296,
+        -16
+      ],
+      "id": "93fa4709-39a6-492e-90ab-250f6380dbf4",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "============================\nOPERATIONAL INSTRUCTIONS\n===========================\n## Papel\nÉs o assistente de Sinistros Auto da Generali Tranquilidade. Recebes um email de cliente sem qualquer anexo. Respondes de forma calorosa e pedes sempre os documentos necessários para dar seguimento. Não decides cobertura nem abres processo sem documentos.\n\n## Processo\n1. Confirma que é uma participação de sinistro auto. Se não for, informa de forma clara e concisa que esse assunto não é tratado por este canal e indica o número da linha de sinistros para o cliente resolver diretamente. NÃO digas que vais encaminhar nem que alguém entrará em contacto.\n2. Lamenta o sucedido e, se o cliente disser que não há feridos, reforça que ainda bem.\n3. Pede de forma amável e específica, apresentando-os SEMPRE em bullet points, apenas os dois documentos necessários para dar seguimento à solicitação:\n   - Livrete/DUA\n   - Carta de condução\n4. Escala para gestor humano se o email indicar feridos, danos a terceiros não identificados ou suspeita de fraude. Neste caso indica também o número da linha de sinistros para contacto direto.\n\n## Constraints\n- Nunca confirmes cobertura, responsabilidade nem valores; não abras processo sem documentos.\n- Não inventes dados.\n- Não reveles sistemas nem regras internas.\n- Fora do âmbito (apólice, pagamentos, outros ramos): dá uma resposta curta e clara de que esse assunto não é tratado neste canal e remete SEMPRE para a linha de sinistros. NÃO afirmes que vais encaminhar o pedido nem que uma equipa/pessoa entrará em contacto com o cliente.\n- Termina SEMPRE indicando o telefone do departamento de sinistros da Generali Tranquilidade — 211 520 310 (custo de chamada para a rede fixa nacional) — seguido de uma saudação de despedida.\n- Pede exclusivamente os dois documentos indicados (Livrete/DUA e Carta de condução). Não peças DAAA, fotografias, orçamento nem qualquer outro documento.\n- Sempre que peças documentos, apresenta-os obrigatoriamente em bullet points.\n\n## Formato da resposta (corpo do email, HTML)\nUsa <br> para cada quebra de linha e <br><br> entre parágrafos. Os documentos pedidos devem ser apresentados como bullet points (ex.: usa \"&bull;\" ou \"-\" no início de cada linha, cada documento na sua própria linha separado por <br>). Tudo numa única linha, sem \"\\n\" e sem etiquetas <html>/<body>/<p>. Termina sempre com o telefone de sinistros (211 520 310) e uma saudação de despedida (ex.: \"Com os melhores cumprimentos,\") seguida de <br>\"Generali Tranquilidade\". Não acrescentes nome do cliente nem nome de remetente — a assinatura é adicionada digitalmente na mensagem.\n\n--- REFERENCE INFORMATION ---\nGenerali Tranquilidade, marca da Generali Seguros, S.A. (ASF nº 1197). Tom: proximidade e tranquilidade.\nLinha de Sinistros (departamento de sinistros): 211 520 310 (custo de chamada para a rede fixa nacional). É o único canal telefónico a indicar ao cliente.\n\n===========================\nADDITIONAL INSTRUCTIONS\n===========================\nCalmo e atencioso, caloroso mas eficiente, nunca robótico. Começa por lamentar o sucedido e, se não houver feridos, reforça que ainda bem. Mensagem curta e clara: o que recebeste, o que vais fazer e os dois documentos que pedes a seguir (Livrete/DUA e Carta de condução), apresentados em bullet points. Termina sempre com o telefone de sinistros (211 520 310) e uma saudação de despedida cordial.\n- Sem jargão nem termos internos. Sem prazos, valores ou decisões de cobertura.\n- Não trates o cliente pelo nome próprio na abertura nem no fecho — a assinatura digital trata da identificação.\n- Nunca digas que vais encaminhar o pedido nem que uma equipa/pessoa entrará em contacto com o cliente. Em vez disso, dá a informação direta e remete para o telefone de sinistros.\n\n===========================\nEND CONDITIONS\n===========================\nTermina quando tiveres respondido ao cliente, pedido os dois documentos necessários (Livrete/DUA e Carta de condução) em bullet points e indicado o telefone do departamento de sinistros (211 520 310) com uma saudação de despedida."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -1040,
+        -16
+      ],
+      "id": "92b59dbd-5795-469b-9eb4-9b9b4b620c48",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-opus-4-7",
+          "mode": "list",
+          "cachedResultName": "Claude Opus 4.7"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.5,
+      "position": [
+        -1040,
+        240
+      ],
+      "id": "4999a6df-7746-408c-b98f-1b503d52e44c",
+      "name": "Anthropic Chat Model1",
+      "credentials": {
+        "anthropicApi": {
+          "id": "OYHHxPgqsZ7Bcc3k",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "modelId": {
+          "__rl": true,
+          "value": "claude-opus-4-7",
+          "mode": "list",
+          "cachedResultName": "claude-opus-4-7"
+        },
+        "text": "És um agente que analisa os documentos anexados a um email para determinar se se trata de UM destes dois documentos portugueses:\n1. Carta de Condução (carta de condução de Portugal)\n2. Livrete / DUA do veículo (Certificado de Matrícula – República Portuguesa)\n\nLê TODOS os documentos anexados, sem deixar nenhum por analisar (incluindo frente e verso, se existirem). Com base no conteúdo, DETETA automaticamente qual dos dois tipos de documento está presente:\n- Se contiver campos de veículo (matrícula em A, VIN de 17 caracteres em E, marca em D.1, etc.), é um DUA / Livrete.\n- Se contiver campos de titular pessoal (data de nascimento, categorias de condução B/A/C, número da carta, etc.), é uma Carta de Condução.\n\nExtrai apenas os campos do tipo de documento detetado.\n\nUm campo considera-se \"correto\" apenas se aparecer no documento e o seu valor for legível e coerente com o esperado (uma data onde se espera uma data, um VIN de 17 caracteres em E, uma matrícula em A, etc.). Um campo vazio, ilegível ou ausente não conta.\n\nCalcula a percentagem de campos corretos (campos corretos ÷ total de campos do documento):\n- Devolve \"Si\" no campo \"documento_valido\" se o documento tiver pelo menos 50% dos seus campos corretos.\n- Devolve \"No\" se tiver menos de 50% dos seus campos corretos, ou se não for possível identificar nenhum dos dois tipos.\n\nNão inventes valores que não estejam no documento.\n\n--- Campos do DUA / Livrete ---\n{\n  \"numero_certificado\": \"\",\n  \"data_emissao\": \"\",\n  \"dados_registo\": {\n    \"A_matricula\": \"\",\n    \"B_data_primeira_matricula\": \"\",\n    \"I_data_registo_certificado\": \"\"\n  },\n  \"titular\": {\n    \"C_1_1_apelido\": \"\",\n    \"C_1_2_nome_proprio\": \"\",\n    \"C_1_3_morada\": \"\",\n    \"C_3_1\": \"\",\n    \"C_3_2\": \"\",\n    \"C_3_3\": \"\",\n    \"C_4_observacao\": \"\"\n  },\n  \"veiculo\": {\n    \"D_1_marca\": \"\",\n    \"D_2_tipo_variante_versao\": \"\",\n    \"D_3_modelo\": \"\",\n    \"E_numero_quadro_VIN\": \"\",\n    \"F_1_F_2_massa_maxima\": \"\",\n    \"F_3\": \"\",\n    \"G_massa_em_servico\": \"\",\n    \"H\": \"\",\n    \"J_1_categoria\": \"\",\n    \"J_2_carroçaria\": \"\",\n    \"J_3_observacao\": \"\",\n    \"K_homologacao\": \"\",\n    \"K_1\": \"\",\n    \"N_1_a_N_5_repartição_massa\": \"\",\n    \"O_1_massa_reboque_travado\": \"\",\n    \"O_2_massa_reboque_nao_travado\": \"\",\n    \"R_cor\": \"\",\n    \"P_1_cilindrada\": \"\",\n    \"P_2_potencia_kW\": \"\",\n    \"P_3_combustivel\": \"\",\n    \"Q\": \"\",\n    \"S_1_lugares_sentados\": \"\",\n    \"S_2\": \"\",\n    \"U_1_nivel_sonoro\": \"\",\n    \"V_1_emissoes_CO2\": \"\",\n    \"X_1_pneus_eixo_1\": \"\",\n    \"X_2_pneus_eixo_2\": \"\"\n  },\n  \"Z_3_observacoes\": \"\"\n}\n\n--- Campos da Carta de Condução ---\n{\n  \"campo_1_apelidos\": \"\",\n  \"campo_2_nome_proprio\": \"\",\n  \"campo_3_data_nascimento\": \"\",\n  \"campo_3_local_nascimento\": \"\",\n  \"campo_4a_data_emissao\": \"\",\n  \"campo_4b_data_validade\": \"\",\n  \"campo_4c_entidade_emissora\": \"\",\n  \"campo_4d_numero_controlo\": \"\",\n  \"campo_5_numero_carta\": \"\",\n  \"campo_7_assinatura_presente\": true,\n  \"campo_9_categorias_resumo\": [],\n  \"campo_9_12_categorias_detalhe\": [\n    {\n      \"col_9_categoria\": \"\",\n      \"col_10_data_emissao\": \"\",\n      \"col_11_data_validade\": \"\",\n      \"col_12_codigos\": \"\"\n    }\n  ],\n  \"campo_13_anotacoes\": \"\",\n  \"campo_14_anotacoes\": \"\"\n}\n\n--- Resultado final ---\nDevolve APENAS um JSON com o tipo de documento detetado e o respetivo esquema preenchido.\n\nO campo \"tipo_documento\" deve conter um destes valores:\n- \"dua\"   → se for um Livrete / DUA / Certificado de Matrícula\n- \"carta\" → se for uma Carta de Condução\n- \"\"      → se não for possível identificar nenhum dos dois\n\nEstrutura de saída:\n{\n  \"tipo_documento\": \"dua\" | \"carta\" | \"\",\n  \"documento_valido\": \"Si\" | \"No\",\n  \"dados\": { ...esquema correspondente ao tipo_documento detetado, preenchido... }\n}\n\nInclui em \"dados\" apenas o esquema do tipo detetado (o do DUA OU o da Carta, nunca os dois).\nDeixa em branco (\"\") os campos que não conseguires extrair.",
+        "inputType": "binary",
+        "binaryPropertyName": "image_1, image_2",
+        "simplify": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "position": [
+        -1168,
+        -880
+      ],
+      "id": "2c0da5d3-59c0-4c55-9ff7-e881ef89827c",
+      "name": "Analyze image",
+      "credentials": {
+        "anthropicApi": {
+          "id": "OYHHxPgqsZ7Bcc3k",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "61a613a4-0416-4523-bc8c-d11a41f0045e",
+              "name": "content[0].text",
+              "value": "={{ $json.content[0].text}}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "include": "selected",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1056,
+        -576
+      ],
+      "id": "87d0ce85-17ce-4d72-8f03-76eb9f4ff876",
+      "name": "fields_carta_conducao"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "39355415-0ac9-4b7c-a827-cee929620d04",
+              "name": "name",
+              "value": "={{ $json.sender.emailAddress.name }}",
+              "type": "string"
+            },
+            {
+              "id": "d52b7bc5-0606-4939-a1b8-3e93acea105d",
+              "name": "email_address",
+              "value": "={{ $json.sender.emailAddress.address }}",
+              "type": "string"
+            },
+            {
+              "id": "720c9726-cae3-4459-9908-a78c73a3d191",
+              "name": "message",
+              "value": "={{\n$json.body.content\n.replace(/<style[\\s\\S]*?<\\/style>/gi, '')\n.replace(/<script[\\s\\S]*?<\\/script>/gi, '')\n.replace(/<[^>]+>/g, '\\n')\n.replace(/\\r/g, '')\n.replace(/\\n{2,}/g, '\\n')\n.trim()\n}}",
+              "type": "string"
+            },
+            {
+              "id": "e7d6e266-d880-4a20-a3c2-350e777b7692",
+              "name": "image_1",
+              "value": "={{ $('Microsoft Outlook Trigger').item.binary.attachment_1 }}",
+              "type": "binary"
+            },
+            {
+              "id": "56ce5e8c-d173-41b9-9170-8b21f2454c94",
+              "name": "image_2",
+              "value": "={{ $('Microsoft Outlook Trigger').item.binary.attachment_2 }}",
+              "type": "binary"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1264,
+        -576
+      ],
+      "id": "71d6707d-6595-4821-ac30-1568c44fd573",
+      "name": "fields_email"
+    },
+    {
+      "parameters": {
+        "html": "<!DOCTYPE html>\n\n<html>\n<head>\n  <meta charset=\"UTF-8\" />\n  <title>Generali Seguros</title>\n</head>\n<body>\n<div id=\"Signature\" class=\"elementToProof\">\n<div class=\"elementToProof\" style=\"font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);\">\n<br>\n</div>\n<div>{{ $json.output }}</div>\n<br>\n<p class=\"elementToProof\" style=\"margin: 0cm; font-family: Aptos, sans-serif;\"><span style=\"font-size: 10pt; color: rgb(31, 20, 16);\"><b>Andreia Mendes</b></span></p>\n<p class=\"elementToProof\" style=\"margin: 0cm; font-family: Aptos, sans-serif;\"><span style=\"font-size: 8pt; color: rgb(166, 166, 166);\"><b>Customer Process Optimization</b></span></p>\n<p class=\"elementToProof\" style=\"margin: 0cm; font-family: Aptos, sans-serif; font-size: 12pt;\">\n    <!-- Logo debajo y alineado a la izquierda -->\n    <div style=\"margin-top:8px; text-align:left;\">\n        <img\n            src=\"https://i.ibb.co/bRRcHb1Z/logo-verticale-2020-07-16-17-41-03.jpg\"\n            alt=\"Generali Seguros Logo\"\n            width=\"200\"\n            height=\"80\"\n            style=\"display:block;\">\n    </div>\n</div>\n</body>\n</html>\n"
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        -688,
+        -16
+      ],
+      "id": "fdfe0267-4413-408a-b88c-82d78a385f17",
+      "name": "HTML1"
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "messageId": {
+          "__rl": true,
+          "value": "={{ $('Microsoft Outlook Trigger').item.json.id }}",
+          "mode": "id"
+        },
+        "replyToSenderOnly": true,
+        "message": "={{ $json.html }}",
+        "additionalFields": {
+          "bodyContentType": "html"
+        },
+        "options": {
+          "saveAsDraft": false
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        -432,
+        -16
+      ],
+      "id": "c4dac8bf-b731-4075-9f1a-050a7c93f537",
+      "name": "Reply to a message1",
+      "webhookId": "9067f643-70ef-4cd1-9e09-94ea0cabca0f",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "UPYigvYXSMBcsvW2",
+          "name": "Microsoft Outlook OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "17Rx3l-hRF2Lz97D5Lz9YJYyDETPfZmrvftAUKdlJhF8",
+          "mode": "list",
+          "cachedResultName": "generali_tranquilidade",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/17Rx3l-hRF2Lz97D5Lz9YJYyDETPfZmrvftAUKdlJhF8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "carta",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/17Rx3l-hRF2Lz97D5Lz9YJYyDETPfZmrvftAUKdlJhF8/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "carta_conduçao",
+              "displayName": "carta_conduçao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -592,
+        -256
+      ],
+      "id": "d4ce6a82-4182-4bb6-945f-443777aebcfa",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nL1Kpa7CCw6syxNr",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const c = $json[\"carta_conduçao\"];\n\nreturn {\n  json: {\n    campo_1_apelidos: c[\"campo_1_apelidos\"],\n    campo_2_nome_proprio: c[\"campo_2_nome_proprio\"],\n    campo_3_data_nascimento: c[\"campo_3_data_nascimento\"],\n    campo_3_local_nascimento: c[\"campo_3_local_nascimento\"],\n    campo_4a_data_emissao: c[\"campo_4a_data_emissao\"],\n    campo_4b_data_validade: c[\"campo_4b_data_validade\"],\n    campo_4c_entidade_emissora: c[\"campo_4c_entidade_emissora\"],\n    campo_4d_numero_controlo: c[\"campo_4d_numero_controlo\"],\n    campo_5_numero_carta: c[\"campo_5_numero_carta\"],\n    campo_7_assinatura_presente: c[\"campo_7_assinatura_presente\"],\n    campo_9_categorias_resumo: (c[\"campo_9_categorias_resumo\"] || []).join(\", \"),\n    campo_9_12_categorias_detalhe: (c[\"campo_9_12_categorias_detalhe\"] || [])\n      .map(d => `${d[\"col_9_categoria\"]}: ${d[\"col_10_data_emissao\"]}–${d[\"col_11_data_validade\"]}${d[\"col_12_codigos\"] ? \" (\" + d[\"col_12_codigos\"] + \")\" : \"\"}`)\n      .join(\" | \"),\n    campo_13_anotacoes: c[\"campo_13_anotacoes\"],\n    campo_14_anotacoes: c[\"campo_14_anotacoes\"]\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -848,
+        -256
+      ],
+      "id": "3a9268de-6209-4a1f-93ee-f709a97f0676",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "61a613a4-0416-4523-bc8c-d11a41f0045e",
+              "name": "content[0].text",
+              "value": "={{ $json.content[0].text}}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "include": "selected",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -768,
+        -896
+      ],
+      "id": "357dc942-2c51-4ff0-ac25-67b9e79f1448",
+      "name": "fields_dua"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.content[0].text }}",
+                    "rightValue": "\"tipo_documento\": \"dua\"",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "d2fc9dd0-d7ea-48a4-90a7-0a5bd9c01624"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "dua"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "f9cbfee0-228e-4d48-af4d-3d8afe36ac28",
+                    "leftValue": "={{ $json.content[0].text }}",
+                    "rightValue": "\"tipo_documento\": \"carta\"",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "carta"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -992,
+        -880
+      ],
+      "id": "1f88baf6-a664-48dd-b324-9b3e37d545cd",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $json[\"data\"];\nconst reg = d[\"dados\"][\"dados_registo\"];\nconst tit = d[\"dados\"][\"titular\"];\nconst vei = d[\"dados\"][\"veiculo\"];\n\nreturn {\n  json: {\n    campo_numero_certificado: d[\"dados\"][\"numero_certificado\"],\n    campo_data_emissao: d[\"dados\"][\"data_emissao\"],\n\n    // Dados de registo\n    campo_A_matricula: reg[\"A_matricula\"],\n    campo_B_data_primeira_matricula: reg[\"B_data_primeira_matricula\"],\n    campo_I_data_registo_certificado: reg[\"I_data_registo_certificado\"],\n\n    // Titular\n    campo_C_1_1_apelido: tit[\"C_1_1_apelido\"],\n    campo_C_1_2_nome_proprio: tit[\"C_1_2_nome_proprio\"],\n    campo_C_1_3_morada: tit[\"C_1_3_morada\"],\n    campo_C_3_1: tit[\"C_3_1\"],\n    campo_C_3_2: tit[\"C_3_2\"],\n    campo_C_3_3: tit[\"C_3_3\"],\n    campo_C_4_observacao: tit[\"C_4_observacao\"],\n\n    // Veículo\n    campo_D_1_marca: vei[\"D_1_marca\"],\n    campo_D_2_tipo_variante_versao: vei[\"D_2_tipo_variante_versao\"],\n    campo_D_3_modelo: vei[\"D_3_modelo\"],\n    campo_E_numero_quadro_VIN: vei[\"E_numero_quadro_VIN\"],\n    campo_F_1_F_2_massa_maxima: vei[\"F_1_F_2_massa_maxima\"],\n    campo_F_3: vei[\"F_3\"],\n    campo_G_massa_em_servico: vei[\"G_massa_em_servico\"],\n    campo_H: vei[\"H\"],\n    campo_J_1_categoria: vei[\"J_1_categoria\"],\n    campo_J_2_carrocaria: vei[\"J_2_carroçaria\"],\n    campo_J_3_observacao: vei[\"J_3_observacao\"],\n    campo_K_homologacao: vei[\"K_homologacao\"],\n    campo_K_1: vei[\"K_1\"],\n    campo_N_1_a_N_5_reparticao_massa: vei[\"N_1_a_N_5_repartição_massa\"],\n    campo_O_1_massa_reboque_travado: vei[\"O_1_massa_reboque_travado\"],\n    campo_O_2_massa_reboque_nao_travado: vei[\"O_2_massa_reboque_nao_travado\"],\n    campo_R_cor: vei[\"R_cor\"],\n    campo_P_1_cilindrada: vei[\"P_1_cilindrada\"],\n    campo_P_2_potencia_kW: vei[\"P_2_potencia_kW\"],\n    campo_P_3_combustivel: vei[\"P_3_combustivel\"],\n    campo_Q: vei[\"Q\"],\n    campo_S_1_lugares_sentados: vei[\"S_1_lugares_sentados\"],\n    campo_S_2: vei[\"S_2\"],\n    campo_U_1_nivel_sonoro: vei[\"U_1_nivel_sonoro\"],\n    campo_V_1_emissoes_CO2: vei[\"V_1_emissoes_CO2\"],\n    campo_X_1_pneus_eixo_1: vei[\"X_1_pneus_eixo_1\"],\n    campo_X_2_pneus_eixo_2: vei[\"X_2_pneus_eixo_2\"],\n\n    // Observações\n    campo_Z_3_observacoes: d[\"dados\"][\"Z_3_observacoes\"]\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        -1056
+      ],
+      "id": "f4a5c81a-d8d9-474f-bb6b-58e47fa12ff3",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "17Rx3l-hRF2Lz97D5Lz9YJYyDETPfZmrvftAUKdlJhF8",
+          "mode": "list",
+          "cachedResultName": "generali_tranquilidade",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/17Rx3l-hRF2Lz97D5Lz9YJYyDETPfZmrvftAUKdlJhF8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 199338172,
+          "mode": "list",
+          "cachedResultName": "dua",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/17Rx3l-hRF2Lz97D5Lz9YJYyDETPfZmrvftAUKdlJhF8/edit#gid=199338172"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "campo_tipo_documento",
+              "displayName": "campo_tipo_documento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_documento_valido",
+              "displayName": "campo_documento_valido",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_numero_certificado",
+              "displayName": "campo_numero_certificado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_data_emissao",
+              "displayName": "campo_data_emissao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_A_matricula",
+              "displayName": "campo_A_matricula",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_B_data_primeira_matricula",
+              "displayName": "campo_B_data_primeira_matricula",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_I_data_registo_certificado",
+              "displayName": "campo_I_data_registo_certificado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_C_1_1_apelido",
+              "displayName": "campo_C_1_1_apelido",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_C_1_2_nome_proprio",
+              "displayName": "campo_C_1_2_nome_proprio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_C_1_3_morada",
+              "displayName": "campo_C_1_3_morada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_C_3_1",
+              "displayName": "campo_C_3_1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_C_3_2",
+              "displayName": "campo_C_3_2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_C_3_3",
+              "displayName": "campo_C_3_3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_C_4_observacao",
+              "displayName": "campo_C_4_observacao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_D_1_marca",
+              "displayName": "campo_D_1_marca",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_D_2_tipo_variante_versao",
+              "displayName": "campo_D_2_tipo_variante_versao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_D_3_modelo",
+              "displayName": "campo_D_3_modelo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_E_numero_quadro_VIN",
+              "displayName": "campo_E_numero_quadro_VIN",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_F_1_F_2_massa_maxima",
+              "displayName": "campo_F_1_F_2_massa_maxima",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_F_3",
+              "displayName": "campo_F_3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_G_massa_em_servico",
+              "displayName": "campo_G_massa_em_servico",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_H",
+              "displayName": "campo_H",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_J_1_categoria",
+              "displayName": "campo_J_1_categoria",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_J_2_carrocaria",
+              "displayName": "campo_J_2_carrocaria",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_J_3_observacao",
+              "displayName": "campo_J_3_observacao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_K_homologacao",
+              "displayName": "campo_K_homologacao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_K_1",
+              "displayName": "campo_K_1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_N_1_a_N_5_reparticao_massa",
+              "displayName": "campo_N_1_a_N_5_reparticao_massa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_O_1_massa_reboque_travado",
+              "displayName": "campo_O_1_massa_reboque_travado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_O_2_massa_reboque_nao_travado",
+              "displayName": "campo_O_2_massa_reboque_nao_travado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_R_cor",
+              "displayName": "campo_R_cor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_P_1_cilindrada",
+              "displayName": "campo_P_1_cilindrada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_P_2_potencia_kW",
+              "displayName": "campo_P_2_potencia_kW",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_P_3_combustivel",
+              "displayName": "campo_P_3_combustivel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_Q",
+              "displayName": "campo_Q",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_S_1_lugares_sentados",
+              "displayName": "campo_S_1_lugares_sentados",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_S_2",
+              "displayName": "campo_S_2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_U_1_nivel_sonoro",
+              "displayName": "campo_U_1_nivel_sonoro",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_V_1_emissoes_CO2",
+              "displayName": "campo_V_1_emissoes_CO2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_X_1_pneus_eixo_1",
+              "displayName": "campo_X_1_pneus_eixo_1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_X_2_pneus_eixo_2",
+              "displayName": "campo_X_2_pneus_eixo_2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campo_Z_3_observacoes",
+              "displayName": "campo_Z_3_observacoes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -224,
+        -1056
+      ],
+      "id": "9c8936af-a77e-4991-9ac0-24d131e6b6d4",
+      "name": "Append row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nL1Kpa7CCw6syxNr",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b849ff54-11fa-4837-9c47-b0b37f486eb6",
+              "name": "data",
+              "value": "={{ $json.content[0].text }}",
+              "type": "object"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "include": "selected",
+        "includeFields": "={{ $json.content[0].text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -576,
+        -1056
+      ],
+      "id": "0d4a4a77-4ce7-4765-8e6b-87aa1d9fbac9",
+      "name": "excel_data_dua"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b849ff54-11fa-4837-9c47-b0b37f486eb6",
+              "name": "carta_conduçao",
+              "value": "={{ $json.content[0].text }}",
+              "type": "object"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "include": "selected",
+        "includeFields": "={{ $json.content[0].text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1072,
+        -256
+      ],
+      "id": "59f47847-6426-4b58-9e7e-f07c2fdd2617",
+      "name": "excel_data_carta"
+    },
+    {
+      "parameters": {
+        "errorMessage": "Message does not contain \"generali\" in the subject"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        -1504,
+        -160
+      ],
+      "id": "81f40e0a-b6ee-4ab9-9024-6c85c4ffad50",
+      "name": "Stop and Error"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5e7bc316-5a43-408d-af92-e9ad18bf0cbc",
+              "leftValue": "={{ $json.subject.toLowerCase() }}",
+              "rightValue": "generali",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": "={{ false }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1680,
+        -400
+      ],
+      "id": "728823b4-a295-4b84-a5cb-004a6c9ed9c8",
+      "name": "check subject"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0b9f0124-bf43-46f4-92b3-7ab368acaad4",
+              "leftValue": "={{ $json.hasAttachments }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1408,
+        -416
+      ],
+      "id": "1b9c62aa-27b5-40f3-b60a-6cdd4d601dd1",
+      "name": "check attachment"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Microsoft Outlook Trigger": {
+      "main": [
+        [
+          {
+            "node": "check subject",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML": {
+      "main": [
+        [
+          {
+            "node": "Reply to a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze image": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "fields_carta_conducao": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "excel_data_carta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "fields_email": {
+      "main": [
+        [
+          {
+            "node": "Analyze image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "HTML1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML1": {
+      "main": [
+        [
+          {
+            "node": "Reply to a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "fields_dua",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "fields_carta_conducao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "fields_dua": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "excel_data_dua",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "excel_data_dua": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "excel_data_carta": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check subject": {
+      "main": [
+        [
+          {
+            "node": "check attachment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop and Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check attachment": {
+      "main": [
+        [
+          {
+            "node": "fields_email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "485caef7-99df-4d95-ba24-bf87ccf6785d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5d7f7e0bd54d744c3a98d1967078639196e6a503662e77ad574ce89f6f73eed1"
+  },
+  "nodeGroups": [],
+  "id": "0TEGQNKhtzihfV4Y",
+  "tags": []
+}

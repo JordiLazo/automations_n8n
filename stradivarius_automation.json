@@ -1,0 +1,797 @@
+{
+  "name": "Stradivarius",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "output": "raw",
+        "filters": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.microsoftOutlookTrigger",
+      "typeVersion": 1,
+      "position": [
+        -544,
+        48
+      ],
+      "id": "47487f82-a0cb-440a-ab4b-e21c2ca705b0",
+      "name": "Microsoft Outlook Trigger"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "39355415-0ac9-4b7c-a827-cee929620d04",
+              "name": "name",
+              "value": "={{ $json.sender.emailAddress.name }}",
+              "type": "string"
+            },
+            {
+              "id": "d52b7bc5-0606-4939-a1b8-3e93acea105d",
+              "name": "email_address",
+              "value": "={{ $json.sender.emailAddress.address }}",
+              "type": "string"
+            },
+            {
+              "id": "720c9726-cae3-4459-9908-a78c73a3d191",
+              "name": "message",
+              "value": "={{\n$json.body.content\n.replace(/<style[\\s\\S]*?<\\/style>/gi, '')\n.replace(/<script[\\s\\S]*?<\\/script>/gi, '')\n.replace(/<[^>]+>/g, '\\n')\n.replace(/\\r/g, '')\n.replace(/\\n{2,}/g, '\\n')\n.trim()\n}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        192
+      ],
+      "id": "373e2c5f-5244-43f2-8177-2dc319804cec",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-sonnet-4-6",
+          "cachedResultName": "Claude Sonnet 4.6"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.5,
+      "position": [
+        368,
+        400
+      ],
+      "id": "4f586206-fb72-4030-86a4-ac50f6fc0796",
+      "name": "Anthropic Chat Model"
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "messageId": {
+          "__rl": true,
+          "value": "={{ $('Microsoft Outlook Trigger').item.json.id }}",
+          "mode": "id"
+        },
+        "replyToSenderOnly": true,
+        "message": "={{ $json.html }}",
+        "additionalFields": {
+          "bodyContentType": "html"
+        },
+        "options": {
+          "saveAsDraft": false
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        928,
+        704
+      ],
+      "id": "1c2cfe75-26e8-4cbe-bd88-f8909184937e",
+      "name": "Reply to a message",
+      "webhookId": "c28466de-672b-470c-9eca-7fd43e941aed"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message }}",
+        "options": {
+          "systemMessage": "Eres el agente de validación de direcciones de envío de Stradivarius. Lees UN email de\nun cliente y gestionas su dirección, con tono cercano y tuteo.\n\nIDIOMA\nDetecta el idioma en que escribe el cliente y redacta TODO el mensaje en ESE mismo idioma\n(español, catalán, italiano, inglés, francés, alemán, portugués, etc.). Si el email mezcla\nidiomas, usa el predominante. Nunca cambies de idioma respecto al del cliente.\n\nPASO 1 · Extraer la dirección\nIdentifica la dirección postal que el cliente pregunta o facilita.\n- Usa solo lo que aparece literalmente. No inventes, completes ni corrijas.\n- Ignora firma, pie de correo, enlaces y datos de contacto del remitente.\n- Si hay varias, toma la que es objeto de la consulta.\n- Móntala en una sola línea: calle y número, código postal, localidad (solo lo presente).\n\nPASO 2 · Decidir el mensaje\n\nA) Si NO hay dirección en el email:\n   - NO llames a la herramienta de validación.\n   - Escribe un mensaje pidiendo amablemente que indique su dirección de envío completa.\n\nB) Si HAY dirección:\n   - Llama a la herramienta de validación (Google Address Validation) con esa dirección.\n   - Evalúa la respuesta:\n     • 100% validada → verdict.addressComplete = true Y sin componentes sin confirmar,\n       reemplazados ni inferidos. Mensaje confirmando al cliente que su dirección es correcta.\n     • No 100% validada → falta algún dato, hay componentes sin confirmar, o Google ha\n       corregido/completado algo. Mensaje pidiendo que confirme la dirección, mostrándole\n       la versión propuesta por Google (formattedAddress).\n\nFORMATO DEL MENSAJE\nEl mensaje es el cuerpo del email tal cual se enviará al cliente, en HTML:\n- Usa <br> para cada salto de línea y <br><br> para separar párrafos.\n- NO uses saltos de línea reales ni \"\\n\". Todo el mensaje va en una sola línea con <br>.\n- No incluyas etiquetas <html>, <body> ni <p>; solo texto y <br>.\n\nFORMATO DE SALIDA — REGLA CRÍTICA\nTu razonamiento, tu análisis y la evaluación del resultado de Google son INTERNOS y JAMÁS\ndeben aparecer en la salida. La salida debe EMPEZAR DIRECTAMENTE con el saludo al cliente\n(por ejemplo «¡Hola»).\nPROHIBIDO escribir cosas como «La dirección ha sido validada, pero...», «Google ha inferido...»,\n«Mostraré la dirección...», «no es una validación 100%...» o cualquier explicación de lo que\nvas a hacer. Razona en silencio; al cliente solo le llega el mensaje.\nDevuelve EXCLUSIVAMENTE el texto del mensaje: NO uses JSON, NO uses llaves {}, NO uses comillas,\nNO pongas nombres de campo, NO uses bloques de código (```), NO añadas notas ni preámbulos.\nEl primer carácter de tu respuesta es el saludo; el último, la despedida.\n\nEJEMPLOS\n\nEmail sin dirección:\n¡Hola! 😊<br><br>Para poder enviarte el pedido necesitamos tu dirección de envío completa: calle y número, código postal y localidad.<br><br>¿Nos la facilitas en tu respuesta? Así lo preparamos enseguida.<br><br>¡Gracias y hasta pronto!\n\nEmail: \"¿Existe Carrer Princep de Viana 41, Lleida 25004?\":\n¡Hola! 😊<br><br>¡Listo! Hemos verificado tu dirección y es correcta:<br>📍 Carrer Príncep de Viana 41, 25004 Lleida<br><br>Ya está todo en orden para tu envío.<br><br>¡Gracias y hasta pronto!\n\nEmail de Jordi con dirección incompleta:\n¡Hola, Jordi! 😊<br><br>Gracias por contactar con Stradivarius. Nos encantaría enviarte tu pedido a casa, pero al verificar tu dirección no hemos podido validarla por completo.<br><br>La dirección que nos has indicado es:<br>📍 Carrer Tset 3, Barcelona<br><br>Sin embargo, la dirección que hemos encontrado es:<br>📍 Carrer de Tuset, 3, 08006 Barcelona<br><br>¿Podrías confirmarnos si esta dirección es correcta? Si es así, ya estaría todo listo para enviarte tu pedido sin ningún problema.<br><br>¡Gracias y hasta pronto!"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        480,
+        208
+      ],
+      "id": "235b5e4c-2d99-4496-8204-831912123688",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://addressvalidation.googleapis.com/v1:validateAddress",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "AIzaSyDaTPij5aZBoCDfpAqs7rqLXa11P11jI-U"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"address\": {\n    \"addressLines\": [\"{{$fromAI(\"addressDetected\")}}\"]\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        544,
+        448
+      ],
+      "id": "ce4331dd-e194-4dba-8f8e-f6932711791f",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5e7bc316-5a43-408d-af92-e9ad18bf0cbc",
+              "leftValue": "={{ $json.subject.toLowerCase() }}",
+              "rightValue": "stradivarius",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "f662c539-2b72-4cfd-9191-581c83e642ef",
+              "leftValue": "={{ $json.sender.emailAddress.address }}",
+              "rightValue": "=email.demo@automaise.com",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "18499291-edae-4a5c-98d2-43ab14d03769",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "errorMessage": "Message does not come from Jordi or Victor"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        160,
+        496
+      ],
+      "id": "0790ae38-c780-4f32-8d08-f6cd1b6eef36",
+      "name": "Stop and Error"
+    },
+    {
+      "parameters": {
+        "html": "<!DOCTYPE html>\n\n<html>\n<head>\n  <meta charset=\"UTF-8\" />\n  <title>Stradivarius</title>\n</head>\n<body>\n<div id=\"Signature\" class=\"elementToProof\">\n<div class=\"elementToProof\" style=\"font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);\">\n<br>\n</div>\n<div>{{ $json.output }}</div>\n<br>\n<p class=\"elementToProof\" style=\"margin: 0cm; font-family: Aptos, sans-serif;\"><span style=\"font-size: 10pt; color: rgb(31, 20, 16);\"><b>Anna Komar</b></span></p>\n<p class=\"elementToProof\" style=\"margin: 0cm; font-family: Aptos, sans-serif;\"><span style=\"font-size: 8pt; color: rgb(166, 166, 166);\"><b>Ecommerce</b></span></p>\n<p class=\"elementToProof\" style=\"margin: 0cm; font-family: Aptos, sans-serif; font-size: 12pt;\">\n<span style=\"font-family: &quot;Helvetica Neue&quot;; font-size: 11pt; color: black;\"><img src=\"https://i.ibb.co/Q3SHsRFm/2c71e3c4-4dad-41d0-a0b9-e9a7f2de9e93.gif\" alt=\"Stradivarius Logo\" width=\"200\" height=\"35\"\"></span>\n<p class=\"elementToProof\" style=\"margin: 0.05pt 0cm 0cm; font-family: Aptos, sans-serif; font-size: 12pt;\">\n<span style=\"font-family: &quot;Helvetica Neue&quot;; font-size: 8pt; color: rgb(166, 166, 166);\">Avinguda de la Ciència, 26-36</span></p>\n<p class=\"elementToProof\" style=\"margin: 0.05pt 0cm 0cm; font-family: Aptos, sans-serif; font-size: 12pt;\">\n<span style=\"font-family: &quot;Helvetica Neue&quot;; font-size: 8pt; color: rgb(166, 166, 166);\">08290 Cerdanyola del Vallès</span></p>\n<p class=\"elementToProof\" style=\"margin: 0.05pt 0cm 0cm; font-family: Aptos, sans-serif; font-size: 12pt;\">\n<span style=\"font-family: &quot;Helvetica Neue&quot;; font-size: 8pt; color: rgb(166, 166, 166);\">Barcelona</span></p>\n<p class=\"elementToProof\" style=\"margin: 0cm; font-family: Aptos, sans-serif; font-size: 12pt;\">\n<span style=\"font-family: Montserrat; font-size: 9pt;\"><img src=\"https://i.ibb.co/dsjYhQ84/de746703-0af7-4079-9e57-a44bbfc5dc99.png\" alt=\"Inditex Logo\" width=\"60\" height=\"10\"></span></p>\n<p class=\"elementToProof\" style=\"margin: 0cm; font-family: Aptos, sans-serif; font-size: 12pt;\">\n<span style=\"font-family: Montserrat; font-size: 9pt;\">&nbsp;</span></p>\n</div>\n</body>\n</html>\n"
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        864,
+        432
+      ],
+      "id": "86ed3a26-817b-4a64-b70c-c5d07b70e8b4",
+      "name": "HTML"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.subject.toLowerCase() }}",
+                    "rightValue": "stradivarius",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "8c756352-32f9-4b25-9c09-82e553a182e7"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Geolocations"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c30e5be5-6df0-424f-999e-93fba3cd5962",
+                    "leftValue": "={{ $json.subject.toLowerCase() }}",
+                    "rightValue": "factura",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Invoice"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -240,
+        96
+      ],
+      "id": "d25016ed-5175-45cf-89a1-75304ad400e1",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "messageId": {
+          "__rl": true,
+          "value": "={{ $('Microsoft Outlook Trigger').item.json.id }}",
+          "mode": "id"
+        },
+        "replyToSenderOnly": true,
+        "message": "={{ $('HTML1').item.json.html }}",
+        "additionalFields": {
+          "attachments": {
+            "attachments": [
+              {
+                "binaryPropertyName": "data"
+              }
+            ]
+          },
+          "bodyContentType": "html"
+        },
+        "options": {
+          "saveAsDraft": false
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        576,
+        960
+      ],
+      "id": "6df7e953-6884-4a34-abd0-9f94600fa44b",
+      "name": "Reply to a message1",
+      "webhookId": "c28466de-672b-470c-9eca-7fd43e941aed"
+    },
+    {
+      "parameters": {
+        "html": "<!DOCTYPE html>\n\n<html>\n<head>\n  <meta charset=\"UTF-8\" />\n  <title>Stradivarius</title>\n</head>\n<body>\n<div id=\"Signature\" class=\"elementToProof\">\n<div class=\"elementToProof\" style=\"font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);\">\n<br>\n</div>\n<div>{{ $('AI Agent1').item.json.output.message }}</div>\n<br>\n<p class=\"elementToProof\" style=\"margin: 0cm; font-family: Aptos, sans-serif;\"><span style=\"font-size: 10pt; color: rgb(31, 20, 16);\"><b>Anna Komar</b></span></p>\n<p class=\"elementToProof\" style=\"margin: 0cm; font-family: Aptos, sans-serif;\"><span style=\"font-size: 8pt; color: rgb(166, 166, 166);\"><b>Ecommerce</b></span></p>\n<p class=\"elementToProof\" style=\"margin: 0cm; font-family: Aptos, sans-serif; font-size: 12pt;\">\n<span style=\"font-family: &quot;Helvetica Neue&quot;; font-size: 11pt; color: black;\"><img src=\"https://i.ibb.co/Q3SHsRFm/2c71e3c4-4dad-41d0-a0b9-e9a7f2de9e93.gif\" alt=\"Stradivarius Logo\" width=\"200\" height=\"35\"\"></span>\n<p class=\"elementToProof\" style=\"margin: 0.05pt 0cm 0cm; font-family: Aptos, sans-serif; font-size: 12pt;\">\n<span style=\"font-family: &quot;Helvetica Neue&quot;; font-size: 8pt; color: rgb(166, 166, 166);\">Avinguda de la Ciència, 26-36</span></p>\n<p class=\"elementToProof\" style=\"margin: 0.05pt 0cm 0cm; font-family: Aptos, sans-serif; font-size: 12pt;\">\n<span style=\"font-family: &quot;Helvetica Neue&quot;; font-size: 8pt; color: rgb(166, 166, 166);\">08290 Cerdanyola del Vallès</span></p>\n<p class=\"elementToProof\" style=\"margin: 0.05pt 0cm 0cm; font-family: Aptos, sans-serif; font-size: 12pt;\">\n<span style=\"font-family: &quot;Helvetica Neue&quot;; font-size: 8pt; color: rgb(166, 166, 166);\">Barcelona</span></p>\n<p class=\"elementToProof\" style=\"margin: 0cm; font-family: Aptos, sans-serif; font-size: 12pt;\">\n<span style=\"font-family: Montserrat; font-size: 9pt;\"><img src=\"https://i.ibb.co/dsjYhQ84/de746703-0af7-4079-9e57-a44bbfc5dc99.png\" alt=\"Inditex Logo\" width=\"60\" height=\"10\"></span></p>\n<p class=\"elementToProof\" style=\"margin: 0cm; font-family: Aptos, sans-serif; font-size: 12pt;\">\n<span style=\"font-family: Montserrat; font-size: 9pt;\">&nbsp;</span></p>\n</div>\n</body>\n</html>\n"
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        112,
+        1040
+      ],
+      "id": "59673252-ef8a-4e3c-a5b0-2884da683956",
+      "name": "HTML1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Eres un agente de atención al cliente.\n\nTu única función es comprobar si el número de pedido solicitado por el cliente es exactamente:\n\nZAL-DEMO-2026-0616-001\n\nReglas:\n\n* Si el cliente solicita una factura para el pedido ZAL-DEMO-2026-0616-001, responde indicando que adjuntas la factura y establece invoice = \"Yes\".\n* Si el cliente solicita una factura para cualquier otro pedido, responde indicando que no has encontrado ese pedido en la base de datos y que estarás encantado de ayudarle con cualquier otra consulta. En este caso establece invoice = \"No\".\n* No inventes números de pedido.\n* Devuelve siempre únicamente un objeto JSON válido.\n* No añadas texto antes ni después del JSON.\n\nFormato de salida:\n\n{\n\"message\": \"Respuesta para el cliente\",\n\"invoice\": \"Yes|No\"\n}\n\nEjemplo válido si encuentra el pedido:\n\n{\n\"message\": \"Hola,<br><br>Adjuntamos la factura correspondiente a tu pedido. Si necesitas cualquier otra cosa, estaremos encantados de ayudarte.<br><br>Un saludo.\",\n\"invoice\": \"Yes\"\n}\n\nEjemplo válido si no encuentra el pedido:\n\n{\n\"message\": \"Hola,<br><br>No hemos encontrado el pedido indicado en nuestra base de datos. Si podemos ayudarte con cualquier otra consulta, estaremos encantados de hacerlo.<br><br>Un saludo.\",\n\"invoice\": \"No\"\n}\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -304,
+        768
+      ],
+      "id": "bd38c86d-723e-4e29-b13f-ac55b52acc2b",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-sonnet-4-6",
+          "cachedResultName": "Claude Sonnet 4.6"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.5,
+      "position": [
+        -416,
+        880
+      ],
+      "id": "f69cecdc-fae5-421a-902f-ed1b3f5a55ef",
+      "name": "Anthropic Chat Model1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "39355415-0ac9-4b7c-a827-cee929620d04",
+              "name": "name",
+              "value": "={{ $json.sender.emailAddress.name }}",
+              "type": "string"
+            },
+            {
+              "id": "d52b7bc5-0606-4939-a1b8-3e93acea105d",
+              "name": "email_address",
+              "value": "={{ $json.sender.emailAddress.address }}",
+              "type": "string"
+            },
+            {
+              "id": "720c9726-cae3-4459-9908-a78c73a3d191",
+              "name": "message",
+              "value": "={{\n$json.body.content\n.replace(/<style[\\s\\S]*?<\\/style>/gi, '')\n.replace(/<script[\\s\\S]*?<\\/script>/gi, '')\n.replace(/<[^>]+>/g, '\\n')\n.replace(/\\r/g, '')\n.replace(/\\n{2,}/g, '\\n')\n.trim()\n}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -352,
+        512
+      ],
+      "id": "8b8d5c2a-a325-40d3-8faf-4109fc195d04",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"message\": \"California\",\n\t\"invoice\": \"Yes\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -96,
+        960
+      ],
+      "id": "a154caf6-4095-4449-8c6b-bc85e9bb33af",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "html": "<!DOCTYPE html>\n\n<html>\n<head>\n  <meta charset=\"UTF-8\" />\n  <title>Stradivarius</title>\n</head>\n<body>\n<div id=\"Signature\" class=\"elementToProof\">\n<div class=\"elementToProof\" style=\"font-family: Aptos, Aptos_EmbeddedFont, Aptos_MSFontService, Calibri, Helvetica, sans-serif; font-size: 12pt; color: rgb(0, 0, 0);\">\n<br>\n</div>\n<div>{{ $json.output.message }}</div>\n<br>\n<p class=\"elementToProof\" style=\"margin: 0cm; font-family: Aptos, sans-serif;\"><span style=\"font-size: 10pt; color: rgb(31, 20, 16);\"><b>Anna Komar</b></span></p>\n<p class=\"elementToProof\" style=\"margin: 0cm; font-family: Aptos, sans-serif;\"><span style=\"font-size: 8pt; color: rgb(166, 166, 166);\"><b>Ecommerce</b></span></p>\n<p class=\"elementToProof\" style=\"margin: 0cm; font-family: Aptos, sans-serif; font-size: 12pt;\">\n<span style=\"font-family: &quot;Helvetica Neue&quot;; font-size: 11pt; color: black;\"><img src=\"https://i.ibb.co/Q3SHsRFm/2c71e3c4-4dad-41d0-a0b9-e9a7f2de9e93.gif\" alt=\"Stradivarius Logo\" width=\"200\" height=\"35\"\"></span>\n<p class=\"elementToProof\" style=\"margin: 0.05pt 0cm 0cm; font-family: Aptos, sans-serif; font-size: 12pt;\">\n<span style=\"font-family: &quot;Helvetica Neue&quot;; font-size: 8pt; color: rgb(166, 166, 166);\">Avinguda de la Ciència, 26-36</span></p>\n<p class=\"elementToProof\" style=\"margin: 0.05pt 0cm 0cm; font-family: Aptos, sans-serif; font-size: 12pt;\">\n<span style=\"font-family: &quot;Helvetica Neue&quot;; font-size: 8pt; color: rgb(166, 166, 166);\">08290 Cerdanyola del Vallès</span></p>\n<p class=\"elementToProof\" style=\"margin: 0.05pt 0cm 0cm; font-family: Aptos, sans-serif; font-size: 12pt;\">\n<span style=\"font-family: &quot;Helvetica Neue&quot;; font-size: 8pt; color: rgb(166, 166, 166);\">Barcelona</span></p>\n<p class=\"elementToProof\" style=\"margin: 0cm; font-family: Aptos, sans-serif; font-size: 12pt;\">\n<span style=\"font-family: Montserrat; font-size: 9pt;\"><img src=\"https://i.ibb.co/dsjYhQ84/de746703-0af7-4079-9e57-a44bbfc5dc99.png\" alt=\"Inditex Logo\" width=\"60\" height=\"10\"></span></p>\n<p class=\"elementToProof\" style=\"margin: 0cm; font-family: Aptos, sans-serif; font-size: 12pt;\">\n<span style=\"font-family: Montserrat; font-size: 9pt;\">&nbsp;</span></p>\n</div>\n</body>\n</html>\n"
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        320,
+        720
+      ],
+      "id": "c3c0b2da-c8d9-4499-8203-66068a08fc9d",
+      "name": "HTML2"
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "messageId": {
+          "__rl": true,
+          "value": "={{ $('Microsoft Outlook Trigger').item.json.id }}",
+          "mode": "id"
+        },
+        "replyToSenderOnly": true,
+        "message": "={{ $json.html }}",
+        "additionalFields": {
+          "bodyContentType": "html"
+        },
+        "options": {
+          "saveAsDraft": false
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        544,
+        720
+      ],
+      "id": "469e8b40-8068-45a9-a6af-dfeee988c731",
+      "name": "Reply to a message2",
+      "webhookId": "c28466de-672b-470c-9eca-7fd43e941aed"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "1C68EjPW22GC-2fRa039d1Nsl6Tv5dyZH",
+          "mode": "list",
+          "cachedResultName": "factura_ZAL-DEMO-2026-0616-001.pdf",
+          "cachedResultUrl": "https://drive.google.com/file/d/1C68EjPW22GC-2fRa039d1Nsl6Tv5dyZH/view?usp=drivesdk"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        288,
+        960
+      ],
+      "id": "689eedfa-1c46-4968-83f0-2aa3e42b5818",
+      "name": "Download file"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2d09157b-daa3-4f9e-a2b1-ffd6c8c97cf5",
+              "leftValue": "={{ $json.output.invoice.toLowerCase() }}",
+              "rightValue": "yes",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        16,
+        720
+      ],
+      "id": "23d46fa2-927f-4b65-ba99-fc7935841d1d",
+      "name": "containsPDF"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5e7bc316-5a43-408d-af92-e9ad18bf0cbc",
+              "leftValue": "={{ $json.subject.toLowerCase() }}",
+              "rightValue": "factura",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "f662c539-2b72-4cfd-9191-581c83e642ef",
+              "leftValue": "={{ $json.sender.emailAddress.address }}",
+              "rightValue": "=email.demo@automaise.com",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -240,
+        336
+      ],
+      "id": "f52e9824-768f-4ad8-b158-e7bbfde58bdd",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "errorMessage": "Message does not come from Jordi or Victor"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        464
+      ],
+      "id": "becf17df-964e-4f31-9daf-b2e88e45265b",
+      "name": "Stop and Error1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Microsoft Outlook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop and Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML": {
+      "main": [
+        [
+          {
+            "node": "Reply to a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML1": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "containsPDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML2": {
+      "main": [
+        [
+          {
+            "node": "Reply to a message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Reply to a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "containsPDF": {
+      "main": [
+        [
+          {
+            "node": "HTML1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTML2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop and Error1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "05ef9a62-1518-4b56-97e9-d1f1ef2d2acf",
+  "meta": {
+    "instanceId": "5d7f7e0bd54d744c3a98d1967078639196e6a503662e77ad574ce89f6f73eed1"
+  },
+  "nodeGroups": [],
+  "id": "RBH6xcHYqfnhJSVF",
+  "tags": []
+}
